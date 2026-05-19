@@ -80,6 +80,18 @@
   justify-content: space-between;
 }
 
+.checkout-ton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.checkout-ton-row span:first-child {
+  font-size: 14px;
+  color: var(--color-text-tertiary);
+}
+
 .checkout-summary-row span:first-child {
   font-size: 17px;
   color: var(--color-text-secondary);

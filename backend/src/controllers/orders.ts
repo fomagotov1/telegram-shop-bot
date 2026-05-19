@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
 import { v4 as uuidv4 } from 'uuid';
-import { createPayment } from '../services/cryptomus';
+import { generateMemo, getWalletAddress, tonToNano } from '../services/ton';
+
+const TON_USD_RATE = 2.5;
 
 export const orderController = {
   async create(req: Request, res: Response) {
@@ -9,28 +11,24 @@ export const orderController = {
       const { telegram_user_id, telegram_username, items, total_amount, currency } = req.body;
 
       const id = uuidv4();
+      const memo = generateMemo(id);
+      const tonAmount = (total_amount / TON_USD_RATE).toFixed(4);
+      const tonNano = tonToNano(parseFloat(tonAmount));
+      const walletAddress = getWalletAddress();
 
       db.prepare(`
-        INSERT INTO orders (id, telegram_user_id, telegram_username, items, total_amount, currency, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending')
+        INSERT INTO orders (id, telegram_user_id, telegram_username, items, total_amount, currency, status, crypto_currency)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', 'TON')
       `).run(id, telegram_user_id, telegram_username, JSON.stringify(items), total_amount, currency || 'USD');
-
-      const payment = await createPayment({
-        order_id: id,
-        amount: total_amount,
-        currency: currency || 'USD',
-      });
-
-      db.prepare(`
-        UPDATE orders SET payment_id = ?, payment_url = ?, crypto_currency = ?
-        WHERE id = ?
-      `).run(payment.uuid, payment.url, payment.currency, id);
 
       res.status(201).json({
         order_id: id,
-        payment_id: payment.uuid,
-        payment_url: payment.url,
-        amount: total_amount,
+        wallet_address: walletAddress,
+        memo,
+        ton_amount: tonAmount,
+        ton_nano: tonNano,
+        usd_amount: total_amount,
+        ton_rate: TON_USD_RATE,
       });
     } catch (error: any) {
       console.error('Order creation error:', error);

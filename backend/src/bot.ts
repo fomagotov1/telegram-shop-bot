@@ -3,13 +3,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-export const bot = new Telegraf(process.env.BOT_TOKEN!);
+const botToken = process.env.BOT_TOKEN;
+export const bot = new Telegraf(botToken!);
 
-const WEBAPP_URL = process.env.SERVER_URL || 'https://your-domain.com';
+const WEBAPP_URL = process.env.SERVER_URL || 'https://telegram-shop-bot.netlify.app';
 
 bot.start((ctx) => {
   ctx.reply(
-    '🛍️ Добро пожаловать в наш магазин!\n\nВыбирайте товары, оплачивайте криптой — всё просто.',
+    '🛍️ Добро пожаловать в наш магазин!\n\nВыбирайте товары, оплачивайте TON — всё просто.',
     Markup.inlineKeyboard([
       Markup.button.webApp('🛒 Открыть магазин', WEBAPP_URL),
     ])
