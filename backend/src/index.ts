@@ -2,12 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { Telegraf } from 'telegraf';
 import { initDatabase } from './db';
 import { productRouter } from './routes/products';
 import { orderRouter } from './routes/orders';
 import { paymentRouter } from './routes/payments';
-import { bot } from './bot';
 
 dotenv.config();
 
@@ -37,10 +35,14 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// Start bot
-bot.launch();
-console.log('Bot started');
-
-// Graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+// Start bot only if token is set
+if (process.env.BOT_TOKEN) {
+  import('./bot').then(({ bot }) => {
+    bot.launch();
+    console.log('Bot started');
+    process.once('SIGINT', () => bot.stop('SIGINT'));
+    process.once('SIGTERM', () => bot.stop('SIGTERM'));
+  });
+} else {
+  console.log('Bot not started (BOT_TOKEN not set)');
+}
