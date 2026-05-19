@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: telegram-shop-bot-backend
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BOT_TOKEN
+        sync: false
+      - key: CRYPTOMUS_MERCHANT_ID
+        sync: false
+      - key: CRYPTOMUS_API_KEY
+        sync: false
+      - key: SERVER_URL
+        sync: false
+      - key: ADMIN_TELEGRAM_ID
+        sync: false
