@@ -1,19 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import WebApp from '@twa-dev/sdk';
 import axios from 'axios';
 import { useCart } from '../hooks/useCart';
 import './Checkout.css';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://backend-production-e853.up.railway.app/api';
+
+type CryptoCurrency = 'TON' | 'USDT_TRC20' | 'USDT_ERC20' | 'ETH' | 'BTC';
+
+interface CurrencyInfo {
+  currency: CryptoCurrency;
+  name: string;
+  network: string;
+  icon: string;
+}
+
+const CURRENCIES: Record<CryptoCurrency, CurrencyInfo> = {
+  TON: {
+    currency: 'TON',
+    name: 'TON',
+    network: 'TON Network',
+    icon: '💎',
+  },
+  USDT_TRC20: {
+    currency: 'USDT_TRC20',
+    name: 'USDT',
+    network: 'TRC-20 (TRON)',
+    icon: '₮',
+  },
+  USDT_ERC20: {
+    currency: 'USDT_ERC20',
+    name: 'USDT',
+    network: 'ERC-20 (Ethereum)',
+    icon: '₮',
+  },
+  ETH: {
+    currency: 'ETH',
+    name: 'ETH',
+    network: 'Ethereum',
+    icon: 'Ξ',
+  },
+  BTC: {
+    currency: 'BTC',
+    name: 'BTC',
+    network: 'Bitcoin',
+    icon: '₿',
+  },
+};
 
 export default function Checkout() {
   const navigate = useNavigate();
   const items = useCart((state) => state.items);
   const clearCart = useCart((state) => state.clearCart);
   const [loading, setLoading] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<CryptoCurrency>('TON');
+  const [availableCurrencies, setAvailableCurrencies] = useState<CryptoCurrency[]>([]);
+  const [cryptoAmount, setCryptoAmount] = useState('0');
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  useEffect(() => {
+    fetchCurrencies();
+  }, []);
+
+  useEffect(() => {
+    if (availableCurrencies.length > 0 && !availableCurrencies.includes(selectedCurrency)) {
+      setSelectedCurrency(availableCurrencies[0]);
+    }
+  }, [availableCurrencies, selectedCurrency]);
+
+  async function fetchCurrencies() {
+    try {
+      const res = await axios.get(`${API_URL}/orders/currencies`);
+      setAvailableCurrencies(res.data.currencies);
+    } catch (e) {
+      console.error('Failed to fetch currencies:', e);
+      setAvailableCurrencies(['TON']);
+    }
+  }
 
   if (items.length === 0) {
     navigate('/cart');
@@ -24,8 +88,8 @@ export default function Checkout() {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/orders`, {
-        telegram_user_id: WebApp.initDataUnsafe?.user?.id,
-        telegram_username: WebApp.initDataUnsafe?.user?.username,
+        telegram_user_id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id,
+        telegram_username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username,
         items: items.map((item) => ({
           id: item.id,
           name: item.name,
@@ -34,6 +98,7 @@ export default function Checkout() {
         })),
         total_amount: totalPrice,
         currency: 'USD',
+        crypto_currency: selectedCurrency,
       });
 
       clearCart();
@@ -42,7 +107,9 @@ export default function Checkout() {
         state: {
           wallet_address: res.data.wallet_address,
           memo: res.data.memo,
-          ton_amount: res.data.ton_amount,
+          crypto_amount: res.data.crypto_amount,
+          currency: res.data.currency,
+          network: res.data.network,
         },
       });
     } catch (e) {
@@ -52,6 +119,8 @@ export default function Checkout() {
       setLoading(false);
     }
   }
+
+  const selectedInfo = CURRENCIES[selectedCurrency];
 
   return (
     <div className="checkout">
@@ -82,25 +151,48 @@ export default function Checkout() {
           <span>К оплате</span>
           <span className="checkout-total">${totalPrice.toFixed(2)}</span>
         </div>
-        <div className="checkout-ton-row">
-          <span>≈ TON</span>
+      </div>
+
+      <div className="currency-selector">
+        <label className="currency-label">Выберите криптовалюту:</label>
+        <div className="currency-options">
+          {availableCurrencies.map((currency) => {
+            const info = CURRENCIES[currency];
+            const isSelected = selectedCurrency === currency;
+            return (
+              <button
+                key={currency}
+                className={`currency-option ${isSelected ? 'active' : ''}`}
+                onClick={() => setSelectedCurrency(currency)}
+              >
+                <span className="currency-icon">{info.icon}</span>
+                <div className="currency-info">
+                  <span className="currency-name">{info.name}</span>
+                  <span className="currency-network">{info.network}</span>
+                </div>
+                {isSelected && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div className="checkout-payment-info">
         <div className="payment-method">
           <div className="payment-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.7 5.05 1.85L12 12 6.95 5.85C8.32 4.7 10.07 4 12 4zm-7 8c0-1.93.7-3.68 1.85-5.05L12 12l-5.15 5.05C5.7 15.68 5 13.93 5 12zm7 7c-1.93 0-3.68-.7-5.05-1.85L12 12l5.05 5.15C15.68 18.3 13.93 19 12 19zm5-7c0 1.93-.7 3.68-1.85 5.05L12 12l5.15-5.05C18.3 8.32 19 10.07 19 12z"/>
-            </svg>
+            <span className="payment-icon-text">{selectedInfo.icon}</span>
           </div>
           <div className="payment-details">
-            <h3>TON</h3>
-            <p>Оплата криптовалютой TON</p>
+            <h3>{selectedInfo.name}</h3>
+            <p>Оплата через {selectedInfo.network}</p>
           </div>
         </div>
         <p className="payment-note">
-          После нажатия «Оплатить» вы получите адрес кошелька и комментарий для перевода.
+          После нажатия «Оплатить» вы получите адрес кошелька для перевода.
         </p>
       </div>
 

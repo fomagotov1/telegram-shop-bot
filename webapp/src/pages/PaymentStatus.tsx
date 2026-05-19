@@ -3,13 +3,31 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './PaymentStatus.css';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://backend-production-e853.up.railway.app/api';
 
 interface PaymentData {
   wallet_address: string;
-  memo: string;
-  ton_amount: string;
+  memo?: string;
+  crypto_amount: string;
+  currency: string;
+  network: string;
 }
+
+const CURRENCY_ICONS: Record<string, string> = {
+  TON: '💎',
+  USDT_TRC20: '₮',
+  USDT_ERC20: '₮',
+  ETH: 'Ξ',
+  BTC: '₿',
+};
+
+const CURRENCY_NAMES: Record<string, string> = {
+  TON: 'TON',
+  USDT_TRC20: 'USDT',
+  USDT_ERC20: 'USDT',
+  ETH: 'ETH',
+  BTC: 'BTC',
+};
 
 export default function PaymentStatus() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -22,8 +40,15 @@ export default function PaymentStatus() {
   const paymentData = (location.state as PaymentData | null) || {
     wallet_address: '',
     memo: '',
-    ton_amount: '',
+    crypto_amount: '',
+    currency: 'TON',
+    network: '',
   };
+
+  const currency = paymentData.currency || 'TON';
+  const currencyIcon = CURRENCY_ICONS[currency] || '💰';
+  const currencyName = CURRENCY_NAMES[currency] || currency;
+  const needsMemo = currency === 'TON';
 
   useEffect(() => {
     if (!orderId) return;
@@ -51,7 +76,7 @@ export default function PaymentStatus() {
     setTimeout(() => setCopied(null), 2000);
   }
 
-  const tonAddressShort = paymentData.wallet_address
+  const addressShort = paymentData.wallet_address
     ? `${paymentData.wallet_address.slice(0, 12)}...${paymentData.wallet_address.slice(-8)}`
     : '';
 
@@ -83,57 +108,59 @@ export default function PaymentStatus() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 className="payment-title">Оплата TON</h1>
+        <h1 className="payment-title">Оплата {currencyName}</h1>
         <div style={{ width: 20 }} />
       </header>
 
       <div className="payment-waiting">
         <div className="ton-amount-display">
           <div className="ton-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.7 5.05 1.85L12 12 6.95 5.85C8.32 4.7 10.07 4 12 4zm-7 8c0-1.93.7-3.68 1.85-5.05L12 12l-5.15 5.05C5.7 15.68 5 13.93 5 12zm7 7c-1.93 0-3.68-.7-5.05-1.85L12 12l5.05 5.15C15.68 18.3 13.93 19 12 19zm5-7c0 1.93-.7 3.68-1.85 5.05L12 12l5.15-5.05C18.3 8.32 19 10.07 19 12z"/>
-            </svg>
+            <span className="currency-icon-large">{currencyIcon}</span>
           </div>
-          <span className="ton-amount-value">{paymentData.ton_amount} TON</span>
+          <span className="ton-amount-value">{paymentData.crypto_amount} {currencyName}</span>
         </div>
 
         <div className="payment-details">
           <div className="payment-detail-row">
             <label>Адрес кошелька</label>
             <div className="payment-detail-value" onClick={() => copyToClipboard(paymentData.wallet_address, 'address')}>
-              <span>{tonAddressShort}</span>
+              <span>{addressShort}</span>
               <span className={`copy-label ${copied === 'address' ? 'visible' : ''}`}>
                 {copied === 'address' ? '✓ Скопировано' : 'Копировать'}
               </span>
             </div>
           </div>
 
-          <div className="payment-detail-row">
-            <label>Комментарий (memo)</label>
-            <div className="payment-detail-value" onClick={() => copyToClipboard(paymentData.memo, 'memo')}>
-              <span className="memo-text">{paymentData.memo}</span>
-              <span className={`copy-label ${copied === 'memo' ? 'visible' : ''}`}>
-                {copied === 'memo' ? '✓ Скопировано' : 'Копировать'}
-              </span>
+          {needsMemo && paymentData.memo && (
+            <div className="payment-detail-row">
+              <label>Комментарий (memo)</label>
+              <div className="payment-detail-value" onClick={() => copyToClipboard(paymentData.memo!, 'memo')}>
+                <span className="memo-text">{paymentData.memo}</span>
+                <span className={`copy-label ${copied === 'memo' ? 'visible' : ''}`}>
+                  {copied === 'memo' ? '✓ Скопировано' : 'Копировать'}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="payment-steps">
           <div className="payment-step">
             <span className="payment-step-num">1</span>
-            <p>Откройте TON Wallet</p>
+            <p>Откройте кошелёк {currencyName}</p>
           </div>
           <div className="payment-step">
             <span className="payment-step-num">2</span>
-            <p>Отправьте <strong>{paymentData.ton_amount} TON</strong> на указанный адрес</p>
+            <p>Отправьте <strong>{paymentData.crypto_amount} {currencyName}</strong> на указанный адрес</p>
           </div>
+          {needsMemo && (
+            <div className="payment-step">
+              <span className="payment-step-num">3</span>
+              <p>Обязательно укажите <strong>комментарий (memo)</strong></p>
+            </div>
+          )}
           <div className="payment-step">
-            <span className="payment-step-num">3</span>
-            <p>Обязательно укажите <strong>комментарий (memo)</strong></p>
-          </div>
-          <div className="payment-step">
-            <span className="payment-step-num">4</span>
+            <span className="payment-step-num">{needsMemo ? '4' : '3'}</span>
             <p>Статус обновится автоматически</p>
           </div>
         </div>

@@ -1,7 +1,15 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
-import { checkTonPayment } from '../services/ton';
+import { checkPayment, CryptoCurrency } from '../services/crypto';
 import { bot } from '../bot';
+
+const RATES: Record<string, number> = {
+  TON: 2.5,
+  USDT_TRC20: 1,
+  USDT_ERC20: 1,
+  ETH: 2500,
+  BTC: 65000,
+};
 
 export const paymentController = {
   async checkStatus(req: Request, res: Response) {
@@ -19,7 +27,11 @@ export const paymentController = {
         return;
       }
 
-      const payment = await checkTonPayment(orderId, (order as any).total_amount);
+      const cryptoCurrency = (order as any).crypto_currency || 'TON';
+      const rate = RATES[cryptoCurrency] || 1;
+      const expectedAmount = (order as any).total_amount / rate;
+
+      const payment = await checkPayment(orderId, cryptoCurrency as CryptoCurrency, expectedAmount);
 
       if (payment.paid) {
         db.prepare(`

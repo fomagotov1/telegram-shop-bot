@@ -60,6 +60,10 @@
   margin-bottom: 12px;
 }
 
+.currency-icon-large {
+  font-size: 32px;
+}
+
 .ton-amount-value {
   font-size: 28px;
   font-weight: 700;

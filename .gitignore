@@ -1,0 +1,6 @@
+PROJECT_MEMORY.md
+node_modules/
+.env
+.env.*
+*.db
+uploads/
