@@ -9,10 +9,13 @@ import * as tinysecp from 'tiny-secp256k1';
 const ECPair = ECPairFactory(tinysecp);
 bitcoin.initEccLib(tinysecp);
 
-const MNEMONIC = process.env.MNEMONIC_SEED;
+const MNEMONIC = process.env.MNEMONIC_SEED?.trim();
 
 if (!MNEMONIC) {
   console.warn('⚠️ MNEMONIC_SEED not set. HD Wallet generation will fail.');
+} else {
+  const wordCount = MNEMONIC.split(' ').length;
+  console.log(`✅ HD Wallet initialized with ${wordCount}-word seed phrase`);
 }
 
 const BTC_PATH_PREFIX = "m/84'/0'/0'/0/";
