@@ -193,7 +193,7 @@ export default function PaymentStatus() {
 
         {paymentData.rub_amount && paymentData.rate && (
           <p className="payment-usd-equiv">
-             {paymentData.rub_amount.toLocaleString('ru-RU')} ₽ ≈ {cryptoAmount} {currencyName} (1 {currencyName} = ${paymentData.rate.toFixed(2)})
+             {paymentData.rub_amount.toLocaleString('ru-RU')} ₽ ≈ {paymentData.crypto_amount} {currencyName} (1 {currencyName} = ${paymentData.rate.toFixed(2)})
           </p>
         )}
 

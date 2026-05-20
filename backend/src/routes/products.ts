@@ -23,10 +23,19 @@ const upload = multer({
   },
 });
 
+function conditionalUpload(req: any, res: any, next: any) {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    upload.single('image')(req, res, next);
+  } else {
+    next();
+  }
+}
+
 router.get('/', productController.getAll);
 router.get('/:id', productController.getById);
-router.post('/', upload.single('image'), productController.create);
-router.put('/:id', upload.single('image'), productController.update);
+router.post('/', conditionalUpload, productController.create);
+router.put('/:id', conditionalUpload, productController.update);
 router.delete('/:id', productController.delete);
 
 export { router as productRouter };
