@@ -57,10 +57,20 @@ const WALLETS: Record<CryptoCurrency, CryptoWallet> = {
   },
 };
 
+const HD_WALLET_CURRENCIES: CryptoCurrency[] = ['USDT_TRC20', 'USDT_ERC20', 'ETH', 'BTC'];
+
 export function getSupportedCurrencies(): CryptoCurrency[] {
-  return Object.keys(WALLETS).filter(
-    (key) => WALLETS[key as CryptoCurrency].address
-  ) as CryptoCurrency[];
+  const currencies: CryptoCurrency[] = [];
+
+  if (process.env.WALLET_ADDRESS_TON || process.env.WALLET_ADDRESS) {
+    currencies.push('TON');
+  }
+
+  if (process.env.MNEMONIC_SEED) {
+    currencies.push(...HD_WALLET_CURRENCIES);
+  }
+
+  return currencies;
 }
 
 export function getWallet(currency: CryptoCurrency): CryptoWallet | null {
