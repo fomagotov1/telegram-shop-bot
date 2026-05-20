@@ -28,6 +28,25 @@ export interface Order {
   payment_url: string | null;
   crypto_currency: string | null;
   paid_amount: number | null;
+  expires_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CurrencyInfo {
+  currency: string;
+  rate: number;
+  symbol: string;
+}
+
+export interface PaymentResponse {
+  order_id: string;
+  wallet_address: string;
+  memo?: string;
+  crypto_amount: string;
+  currency: string;
+  network: string;
+  usd_amount: number;
+  rate: number;
+  expires_at: string;
 }

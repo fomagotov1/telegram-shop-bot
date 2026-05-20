@@ -2,51 +2,50 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../hooks/useCart';
+import type { CurrencyInfo } from '../types';
 import './Checkout.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend-production-e853.up.railway.app/api';
 
 type CryptoCurrency = 'TON' | 'USDT_TRC20' | 'USDT_ERC20' | 'ETH' | 'BTC';
 
-interface CurrencyInfo {
+interface CurrencyOption {
   currency: CryptoCurrency;
   name: string;
   network: string;
   icon: string;
+  rate: number;
 }
 
-const CURRENCIES: Record<CryptoCurrency, CurrencyInfo> = {
+const CURRENCY_META: Record<CryptoCurrency, { name: string; network: string; icon: string }> = {
   TON: {
-    currency: 'TON',
     name: 'TON',
     network: 'TON Network',
     icon: '💎',
   },
   USDT_TRC20: {
-    currency: 'USDT_TRC20',
     name: 'USDT',
     network: 'TRC-20 (TRON)',
     icon: '₮',
   },
   USDT_ERC20: {
-    currency: 'USDT_ERC20',
     name: 'USDT',
     network: 'ERC-20 (Ethereum)',
     icon: '₮',
   },
   ETH: {
-    currency: 'ETH',
     name: 'ETH',
     network: 'Ethereum',
     icon: 'Ξ',
   },
   BTC: {
-    currency: 'BTC',
     name: 'BTC',
     network: 'Bitcoin',
-    icon: '₿',
+    icon: '',
   },
 };
+
+const RUB_TO_USD = 0.011;
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -54,28 +53,47 @@ export default function Checkout() {
   const clearCart = useCart((state) => state.clearCart);
   const [loading, setLoading] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<CryptoCurrency>('TON');
-  const [availableCurrencies, setAvailableCurrencies] = useState<CryptoCurrency[]>([]);
+  const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyOption[]>([]);
   const [cryptoAmount, setCryptoAmount] = useState('0');
 
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPriceUsd = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPriceRub = Math.round(totalPriceUsd / RUB_TO_USD);
 
   useEffect(() => {
     fetchCurrencies();
   }, []);
 
   useEffect(() => {
-    if (availableCurrencies.length > 0 && !availableCurrencies.includes(selectedCurrency)) {
-      setSelectedCurrency(availableCurrencies[0]);
+    if (availableCurrencies.length > 0 && !availableCurrencies.find(c => c.currency === selectedCurrency)) {
+      setSelectedCurrency(availableCurrencies[0].currency);
     }
-  }, [availableCurrencies, selectedCurrency]);
+  }, [availableCurrencies]);
+
+  useEffect(() => {
+    const selected = availableCurrencies.find(c => c.currency === selectedCurrency);
+    if (selected && totalPriceUsd > 0) {
+      const amount = totalPriceUsd / selected.rate;
+      const decimals = selectedCurrency === 'BTC' ? 8 : 6;
+      setCryptoAmount(amount.toFixed(decimals));
+    }
+  }, [selectedCurrency, availableCurrencies, totalPriceUsd]);
 
   async function fetchCurrencies() {
     try {
       const res = await axios.get(`${API_URL}/orders/currencies`);
-      setAvailableCurrencies(res.data.currencies);
+      const currencies: CurrencyOption[] = res.data.currencies.map((c: CurrencyInfo) => ({
+        currency: c.currency as CryptoCurrency,
+        name: CURRENCY_META[c.currency as CryptoCurrency]?.name || c.currency,
+        network: CURRENCY_META[c.currency as CryptoCurrency]?.network || '',
+        icon: CURRENCY_META[c.currency as CryptoCurrency]?.icon || '💰',
+        rate: c.rate,
+      }));
+      setAvailableCurrencies(currencies);
     } catch (e) {
       console.error('Failed to fetch currencies:', e);
-      setAvailableCurrencies(['TON']);
+      setAvailableCurrencies([
+        { currency: 'TON', name: 'TON', network: 'TON Network', icon: '💎', rate: 2.5 },
+      ]);
     }
   }
 
@@ -96,8 +114,8 @@ export default function Checkout() {
           price: item.price,
           quantity: item.quantity,
         })),
-        total_amount: totalPrice,
-        currency: 'USD',
+        total_amount: totalPriceRub,
+        currency: 'RUB',
         crypto_currency: selectedCurrency,
       });
 
@@ -110,6 +128,10 @@ export default function Checkout() {
           crypto_amount: res.data.crypto_amount,
           currency: res.data.currency,
           network: res.data.network,
+          usd_amount: res.data.usd_amount,
+          rub_amount: res.data.rub_amount,
+          rate: res.data.rate,
+          expires_at: res.data.expires_at,
         },
       });
     } catch (e) {
@@ -120,7 +142,7 @@ export default function Checkout() {
     }
   }
 
-  const selectedInfo = CURRENCIES[selectedCurrency];
+  const selectedInfo = availableCurrencies.find(c => c.currency === selectedCurrency) || availableCurrencies[0];
 
   return (
     <div className="checkout">
@@ -135,40 +157,48 @@ export default function Checkout() {
       </header>
 
       <div className="checkout-items">
-        {items.map((item) => (
-          <div key={item.id} className="checkout-item">
-            <div className="checkout-item-info">
-              <h3>{item.name}</h3>
-              <p>× {item.quantity}</p>
+        {items.map((item) => {
+          const itemPriceRub = Math.round(item.price / RUB_TO_USD);
+          return (
+            <div key={item.id} className="checkout-item">
+              <div className="checkout-item-info">
+                <h3>{item.name}</h3>
+                <p>× {item.quantity}</p>
+              </div>
+              <span className="checkout-item-total">{(itemPriceRub * item.quantity).toLocaleString('ru-RU')} ₽</span>
             </div>
-            <span className="checkout-item-total">${(item.price * item.quantity).toFixed(2)}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="checkout-summary">
         <div className="checkout-summary-row">
           <span>К оплате</span>
-          <span className="checkout-total">${totalPrice.toFixed(2)}</span>
+          <span className="checkout-total">{totalPriceRub.toLocaleString('ru-RU')} ₽</span>
         </div>
+        {selectedInfo && (
+          <div className="checkout-summary-row crypto-amount">
+            <span>≈ {cryptoAmount} {selectedInfo.name}</span>
+            <span className="crypto-rate">1 {selectedInfo.name} = ${selectedInfo.rate.toFixed(2)}</span>
+          </div>
+        )}
       </div>
 
       <div className="currency-selector">
         <label className="currency-label">Выберите криптовалюту:</label>
         <div className="currency-options">
           {availableCurrencies.map((currency) => {
-            const info = CURRENCIES[currency];
-            const isSelected = selectedCurrency === currency;
+            const isSelected = selectedCurrency === currency.currency;
             return (
               <button
-                key={currency}
+                key={currency.currency}
                 className={`currency-option ${isSelected ? 'active' : ''}`}
-                onClick={() => setSelectedCurrency(currency)}
+                onClick={() => setSelectedCurrency(currency.currency)}
               >
-                <span className="currency-icon">{info.icon}</span>
+                <span className="currency-icon">{currency.icon}</span>
                 <div className="currency-info">
-                  <span className="currency-name">{info.name}</span>
-                  <span className="currency-network">{info.network}</span>
+                  <span className="currency-name">{currency.name}</span>
+                  <span className="currency-network">{currency.network}</span>
                 </div>
                 {isSelected && (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -184,15 +214,17 @@ export default function Checkout() {
       <div className="checkout-payment-info">
         <div className="payment-method">
           <div className="payment-icon">
-            <span className="payment-icon-text">{selectedInfo.icon}</span>
+            <span className="payment-icon-text">{selectedInfo?.icon}</span>
           </div>
           <div className="payment-details">
-            <h3>{selectedInfo.name}</h3>
-            <p>Оплата через {selectedInfo.network}</p>
+            <h3>{selectedInfo?.name}</h3>
+            <p>Оплата через {selectedInfo?.network}</p>
           </div>
         </div>
         <p className="payment-note">
           После нажатия «Оплатить» вы получите адрес кошелька для перевода.
+          <br />
+           Заказ действителен 30 минут.
         </p>
       </div>
 
@@ -204,7 +236,7 @@ export default function Checkout() {
         {loading ? (
           <span className="spinner" />
         ) : (
-          `Оплатить ${totalPrice.toFixed(2)} USD`
+          `Оплатить ${totalPriceRub.toLocaleString('ru-RU')} ₽`
         )}
       </button>
     </div>

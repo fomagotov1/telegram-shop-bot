@@ -11,6 +11,10 @@ interface PaymentData {
   crypto_amount: string;
   currency: string;
   network: string;
+  usd_amount?: number;
+  rub_amount?: number;
+  rate?: number;
+  expires_at?: string;
 }
 
 const CURRENCY_ICONS: Record<string, string> = {
@@ -18,7 +22,7 @@ const CURRENCY_ICONS: Record<string, string> = {
   USDT_TRC20: '₮',
   USDT_ERC20: '₮',
   ETH: 'Ξ',
-  BTC: '₿',
+  BTC: '',
 };
 
 const CURRENCY_NAMES: Record<string, string> = {
@@ -33,9 +37,11 @@ export default function PaymentStatus() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [status, setStatus] = useState<'pending' | 'paid'>('pending');
+  const [status, setStatus] = useState<'pending' | 'paid' | 'expired'>('pending');
   const [copied, setCopied] = useState<'address' | 'memo' | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const paymentData = (location.state as PaymentData | null) || {
     wallet_address: '',
@@ -51,7 +57,30 @@ export default function PaymentStatus() {
   const needsMemo = currency === 'TON';
 
   useEffect(() => {
-    if (!orderId) return;
+    if (paymentData.expires_at) {
+      const expiresAt = new Date(paymentData.expires_at).getTime();
+      const updateTimer = () => {
+        const remaining = expiresAt - Date.now();
+        if (remaining <= 0) {
+          setTimeLeft(0);
+          setStatus('expired');
+          if (timerRef.current) clearInterval(timerRef.current);
+          if (pollRef.current) clearInterval(pollRef.current);
+        } else {
+          setTimeLeft(Math.floor(remaining / 1000));
+        }
+      };
+      updateTimer();
+      timerRef.current = setInterval(updateTimer, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [paymentData.expires_at]);
+
+  useEffect(() => {
+    if (!orderId || status === 'paid' || status === 'expired') return;
 
     pollRef.current = setInterval(async () => {
       try {
@@ -59,6 +88,11 @@ export default function PaymentStatus() {
         if (checkRes.data.status === 'paid') {
           setStatus('paid');
           if (pollRef.current) clearInterval(pollRef.current);
+          if (timerRef.current) clearInterval(timerRef.current);
+        } else if (checkRes.data.status === 'expired') {
+          setStatus('expired');
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (timerRef.current) clearInterval(timerRef.current);
         }
       } catch (e) {
         console.error('Poll error:', e);
@@ -68,12 +102,18 @@ export default function PaymentStatus() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [orderId]);
+  }, [orderId, status]);
 
   function copyToClipboard(text: string, type: 'address' | 'memo') {
     navigator.clipboard.writeText(text);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
+  }
+
+  function formatTime(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
   const addressShort = paymentData.wallet_address
@@ -100,6 +140,27 @@ export default function PaymentStatus() {
     );
   }
 
+  if (status === 'expired') {
+    return (
+      <div className="payment-status payment-expired">
+        <div className="payment-expired-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </div>
+        <h1 className="payment-expired-title">Время оплаты истекло</h1>
+        <p className="payment-expired-text">
+          Заказ не был оплачен в течение 30 минут.
+        </p>
+        <button className="payment-expired-btn" onClick={() => navigate('/cart')}>
+          Вернуться в корзину
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="payment-status">
       <header className="payment-header">
@@ -113,12 +174,28 @@ export default function PaymentStatus() {
       </header>
 
       <div className="payment-waiting">
+        {timeLeft !== null && (
+          <div className={`payment-timer ${timeLeft < 300 ? 'warning' : ''}`}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>Осталось: {formatTime(timeLeft)}</span>
+          </div>
+        )}
+
         <div className="ton-amount-display">
           <div className="ton-icon">
             <span className="currency-icon-large">{currencyIcon}</span>
           </div>
           <span className="ton-amount-value">{paymentData.crypto_amount} {currencyName}</span>
         </div>
+
+        {paymentData.rub_amount && paymentData.rate && (
+          <p className="payment-usd-equiv">
+             {paymentData.rub_amount.toLocaleString('ru-RU')} ₽ ≈ {cryptoAmount} {currencyName} (1 {currencyName} = ${paymentData.rate.toFixed(2)})
+          </p>
+        )}
 
         <div className="payment-details">
           <div className="payment-detail-row">

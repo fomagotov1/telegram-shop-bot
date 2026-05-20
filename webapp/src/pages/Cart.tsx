@@ -2,13 +2,16 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import './Cart.css';
 
+const RUB_TO_USD = 0.011;
+
 export default function Cart() {
   const navigate = useNavigate();
   const items = useCart((state) => state.items);
   const removeItem = useCart((state) => state.removeItem);
   const updateQuantity = useCart((state) => state.updateQuantity);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPriceUsd = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPriceRub = Math.round(totalPriceUsd / RUB_TO_USD);
 
   if (items.length === 0) {
     return (
@@ -37,49 +40,52 @@ export default function Cart() {
       </header>
 
       <div className="cart-items">
-        {items.map((item) => (
-          <div key={item.id} className="cart-item">
-            <div className="cart-item-image">
-              {item.image_url ? (
-                <img src={item.image_url} alt={item.name} />
-              ) : (
-                <div className="cart-item-image-placeholder" />
-              )}
-            </div>
-            <div className="cart-item-info">
-              <h3 className="cart-item-name">{item.name}</h3>
-              <p className="cart-item-price">${item.price.toFixed(2)}</p>
-            </div>
-            <div className="cart-item-actions">
-              <div className="quantity-control">
-                <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </button>
-                <span>{item.quantity}</span>
-                <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
+        {items.map((item) => {
+          const itemPriceRub = Math.round(item.price / RUB_TO_USD);
+          return (
+            <div key={item.id} className="cart-item">
+              <div className="cart-item-image">
+                {item.image_url ? (
+                  <img src={item.image_url} alt={item.name} />
+                ) : (
+                  <div className="cart-item-image-placeholder" />
+                )}
+              </div>
+              <div className="cart-item-info">
+                <h3 className="cart-item-name">{item.name}</h3>
+                <p className="cart-item-price">{itemPriceRub.toLocaleString('ru-RU')} ₽</p>
+              </div>
+              <div className="cart-item-actions">
+                <div className="quantity-control">
+                  <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                  <span>{item.quantity}</span>
+                  <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                </div>
+                <button className="cart-item-remove" onClick={() => removeItem(item.id)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </div>
-              <button className="cart-item-remove" onClick={() => removeItem(item.id)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="cart-footer">
         <div className="cart-total">
           <span>Итого</span>
-          <span className="cart-total-amount">${totalPrice.toFixed(2)}</span>
+          <span className="cart-total-amount">{totalPriceRub.toLocaleString('ru-RU')} ₽</span>
         </div>
         <button className="cart-checkout-btn" onClick={() => navigate('/checkout')}>
           Оплатить

@@ -6,7 +6,11 @@ interface Props {
   onAdd: () => void;
 }
 
+const RUB_TO_USD = 0.011;
+
 export default function ProductCard({ product, onAdd }: Props) {
+  const priceRub = Math.round(product.price / RUB_TO_USD);
+
   return (
     <div className="product-card">
       <div className="product-image">
@@ -26,7 +30,7 @@ export default function ProductCard({ product, onAdd }: Props) {
         <h3 className="product-name">{product.name}</h3>
         <div className="product-bottom">
           <span className="product-price">
-            ${product.price.toFixed(2)}
+            {priceRub.toLocaleString('ru-RU')} ₽
           </span>
           <button className="product-add-btn" onClick={onAdd}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
