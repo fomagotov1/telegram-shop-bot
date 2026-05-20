@@ -9,7 +9,19 @@ import * as tinysecp from 'tiny-secp256k1';
 const ECPair = ECPairFactory(tinysecp);
 bitcoin.initEccLib(tinysecp);
 
-const MNEMONIC = process.env.MNEMONIC_SEED?.trim();
+function getMnemonic(): string | null {
+  if (process.env.MNEMONIC_SEED_B64) {
+    try {
+      return Buffer.from(process.env.MNEMONIC_SEED_B64, 'base64').toString('utf-8').trim();
+    } catch (e) {
+      console.error('Failed to decode MNEMONIC_SEED_B64:', e);
+      return null;
+    }
+  }
+  return process.env.MNEMONIC_SEED?.trim() || null;
+}
+
+const MNEMONIC = getMnemonic();
 
 if (!MNEMONIC) {
   console.warn('⚠️ MNEMONIC_SEED not set. HD Wallet generation will fail.');
