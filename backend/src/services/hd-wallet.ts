@@ -12,13 +12,20 @@ bitcoin.initEccLib(tinysecp);
 function getMnemonic(): string | null {
   if (process.env.MNEMONIC_SEED_B64) {
     try {
-      return Buffer.from(process.env.MNEMONIC_SEED_B64, 'base64').toString('utf-8').trim();
+      const decoded = Buffer.from(process.env.MNEMONIC_SEED_B64, 'base64').toString('utf-8').trim();
+      console.log('🔑 Decoded MNEMONIC_SEED_B64 length:', decoded.length, 'words:', decoded.split(' ').length);
+      return decoded;
     } catch (e) {
       console.error('Failed to decode MNEMONIC_SEED_B64:', e);
       return null;
     }
   }
-  return process.env.MNEMONIC_SEED?.trim() || null;
+  if (process.env.MNEMONIC_SEED) {
+    const trimmed = process.env.MNEMONIC_SEED.trim();
+    console.log('🔑 MNEMONIC_SEED length:', trimmed.length, 'words:', trimmed.split(' ').length);
+    return trimmed;
+  }
+  return null;
 }
 
 const MNEMONIC = getMnemonic();
