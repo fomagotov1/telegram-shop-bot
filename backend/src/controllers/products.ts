@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { db } from '../db';
 import { v4 as uuidv4 } from 'uuid';
 
-const SERVER_URL = process.env.SERVER_URL || 'https://your-domain.com';
+const UPLOAD_URL = process.env.UPLOAD_URL || process.env.RAILWAY_STATIC_URL || 'https://backend-production-e853.up.railway.app';
 
 export const productController = {
   getAll(_req: Request, res: Response) {
@@ -22,7 +22,7 @@ export const productController = {
   create(req: Request, res: Response) {
     const { name, description, price, currency, category, stock } = req.body;
     const id = uuidv4();
-    const image_url = req.file ? `${SERVER_URL}/uploads/${(req.file as any).filename}` : null;
+    const image_url = req.file ? `${UPLOAD_URL}/uploads/${(req.file as any).filename}` : null;
 
     db.prepare(`
       INSERT INTO products (id, name, description, price, currency, image_url, category, stock)
@@ -43,7 +43,7 @@ export const productController = {
 
     let image_url = (existing as any).image_url;
     if (req.file) {
-      image_url = `${SERVER_URL}/uploads/${(req.file as any).filename}`;
+      image_url = `${UPLOAD_URL}/uploads/${(req.file as any).filename}`;
     }
 
     db.prepare(`

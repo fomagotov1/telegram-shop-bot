@@ -5,7 +5,7 @@ import { useCart } from '../hooks/useCart';
 import ProductCard from '../components/ProductCard';
 import './Catalog.css';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://backend-production-e853.up.railway.app/api';
 
 export default function Catalog() {
   const [products, setProducts] = useState<Product[]>([]);

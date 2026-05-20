@@ -6,7 +6,7 @@ dotenv.config();
 const botToken = process.env.BOT_TOKEN;
 export const bot = new Telegraf(botToken!);
 
-const WEBAPP_URL = process.env.SERVER_URL || 'https://telegram-shop-bot.netlify.app';
+const WEBAPP_URL = 'https://telegram-shop-bot.netlify.app';
 
 bot.start((ctx) => {
   ctx.reply(
