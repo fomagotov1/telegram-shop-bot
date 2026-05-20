@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { db } from '../db';
 import { v4 as uuidv4 } from 'uuid';
 
-const UPLOAD_URL = process.env.UPLOAD_URL || process.env.RAILWAY_STATIC_URL || 'https://backend-production-e853.up.railway.app';
+const UPLOAD_URL = 'https://backend-production-e853.up.railway.app';
 
 export const productController = {
   getAll(_req: Request, res: Response) {

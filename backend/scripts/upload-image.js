@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
+const UPLOAD_BASE = 'https://backend-production-e853.up.railway.app';
 const imagePath = path.join(__dirname, '..', '..', '..', '05c721269ec50303a652364eac0c6e30.webp');
 const imageBuffer = fs.readFileSync(imagePath);
 
@@ -49,6 +50,14 @@ const req = https.request(options, (res) => {
   res.on('end', () => {
     console.log('Status:', res.statusCode);
     console.log('Response:', data);
+    
+    // Update image URL to use backend
+    const parsed = JSON.parse(data);
+    if (parsed.image_url && parsed.image_url.includes('netlify')) {
+      const filename = parsed.image_url.split('/').pop();
+      const correctUrl = `${UPLOAD_BASE}/uploads/${filename}`;
+      console.log('\nCorrect image URL:', correctUrl);
+    }
   });
 });
 
