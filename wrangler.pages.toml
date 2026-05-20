@@ -1,0 +1,12 @@
+{
+  "build": {
+    "command": "cd webapp && npm install && npm run build",
+    "output_directory": "webapp/dist"
+  },
+  "routes": [
+    {
+      "pattern": "^/api/.*",
+      "script": "backend-cf"
+    }
+  ]
+}

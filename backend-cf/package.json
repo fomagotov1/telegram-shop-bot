@@ -1,0 +1,24 @@
+{
+  "name": "shop-bot-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute shop-db --local --file=./drizzle/migrate.sql",
+    "db:migrate:prod": "wrangler d1 execute shop-db --remote --file=./drizzle/migrate.sql"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.0",
+    "grammy": "^1.20.0",
+    "hono": "^4.0.0",
+    "uuid": "^9.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "@types/node": "^25.9.1",
+    "typescript": "^5.0.0",
+    "wrangler": "^3.0.0"
+  }
+}

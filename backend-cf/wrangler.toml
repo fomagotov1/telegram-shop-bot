@@ -1,0 +1,20 @@
+name = "shop-bot-backend"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "shop-db"
+database_id = ""
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "shop-uploads"
+
+[vars]
+BOT_TOKEN = ""
+ADMIN_TELEGRAM_ID = ""
+SERVER_URL = ""
+MNEMONIC_SEED = ""
+WALLET_ADDRESS_TON = ""
