@@ -14,7 +14,8 @@
 .cart-title {
   font-size: 34px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .cart-count {
@@ -37,7 +38,14 @@
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  animation: slideUp 0.35s ease-out both;
 }
+
+.cart-item:nth-child(1) { animation-delay: 0s; }
+.cart-item:nth-child(2) { animation-delay: 0.05s; }
+.cart-item:nth-child(3) { animation-delay: 0.1s; }
+.cart-item:nth-child(4) { animation-delay: 0.15s; }
+.cart-item:nth-child(5) { animation-delay: 0.2s; }
 
 .cart-item-image {
   width: 60px;
@@ -103,7 +111,7 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  transition: color var(--transition-fast);
+  transition: color var(--ease-out);
 }
 
 .quantity-control button:active {
@@ -119,7 +127,7 @@
 
 .cart-item-remove {
   color: var(--color-text-tertiary);
-  transition: color var(--transition-fast);
+  transition: color var(--ease-out);
 }
 
 .cart-item-remove:active {
@@ -133,10 +141,14 @@
   right: 0;
   padding: 16px;
   padding-bottom: max(16px, env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
   border-top: 0.5px solid var(--color-border);
+}
+
+[data-theme="dark"] .cart-footer {
+  background: rgba(0, 0, 0, 0.85);
 }
 
 .cart-total {
@@ -166,12 +178,12 @@
   font-size: 17px;
   font-weight: 600;
   border-radius: var(--radius-md);
-  transition: background var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--ease-out), transform var(--spring-fast);
 }
 
 .cart-checkout-btn:active {
   background: var(--color-accent-hover);
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
 .cart-empty-state {
@@ -181,6 +193,7 @@
   justify-content: center;
   min-height: 60vh;
   text-align: center;
+  animation: fadeIn 0.4s ease-out;
 }
 
 .cart-empty-icon {
@@ -207,9 +220,10 @@
   font-size: 16px;
   font-weight: 600;
   border-radius: 100px;
-  transition: background var(--transition-fast);
+  transition: background var(--ease-out), transform var(--spring-fast);
 }
 
 .cart-go-to-shop:active {
   background: var(--color-accent-hover);
+  transform: scale(0.97);
 }

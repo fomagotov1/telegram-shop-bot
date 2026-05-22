@@ -60,4 +60,66 @@ router.delete('/:id', async (c) => {
   return c.json({ success: true });
 });
 
+router.get('/:id/media', async (c) => {
+  const db = c.env.DB as D1Database;
+  const database = new Database(db);
+  const media = await database.getProductMedia(c.req.param('id'));
+  return c.json(media);
+});
+
+router.post('/:id/media', zValidator('json', z.object({
+  url: z.string().min(1),
+  type: z.enum(['image', 'video']).default('image'),
+  sort_order: z.number().int().default(0),
+})), async (c) => {
+  const db = c.env.DB as D1Database;
+  const database = new Database(db);
+  const data = c.req.valid('json');
+  const media = await database.addProductMedia({
+    product_id: c.req.param('id'),
+    url: data.url,
+    type: data.type,
+    sort_order: data.sort_order,
+  });
+  return c.json(media, 201);
+});
+
+router.delete('/media/:mediaId', async (c) => {
+  const db = c.env.DB as D1Database;
+  const database = new Database(db);
+  const success = await database.deleteProductMedia(c.req.param('mediaId'));
+  if (!success) return c.json({ error: 'Media not found' }, 404);
+  return c.json({ success: true });
+});
+
+router.get('/:id/locations', async (c) => {
+  const db = c.env.DB as D1Database;
+  const database = new Database(db);
+  const locations = await database.getProductLocations(c.req.param('id'));
+  return c.json(locations);
+});
+
+router.post('/:id/locations', zValidator('json', z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+})), async (c) => {
+  const db = c.env.DB as D1Database;
+  const database = new Database(db);
+  const data = c.req.valid('json');
+  const location = await database.addProductLocation({
+    product_id: c.req.param('id'),
+    latitude: data.latitude,
+    longitude: data.longitude,
+  });
+  return c.json(location, 201);
+});
+
+router.delete('/locations/:locationId', async (c) => {
+  const db = c.env.DB as D1Database;
+  const database = new Database(db);
+  const success = await database.deleteProductLocation(c.req.param('locationId'));
+  if (!success) return c.json({ error: 'Location not found' }, 404);
+  return c.json({ success: true });
+});
+
 export { router as productRouter };

@@ -1,28 +1,30 @@
 :root {
-  --color-bg: #fafafa;
+  --color-bg: #f5f5f7;
   --color-surface: #ffffff;
-  --color-surface-secondary: #f5f5f7;
+  --color-surface-secondary: #f2f2f7;
   --color-text: #1d1d1f;
   --color-text-secondary: #6e6e73;
-  --color-text-tertiary: #86868b;
+  --color-text-tertiary: #8e8e93;
   --color-accent: #0071e3;
   --color-accent-hover: #0077ed;
   --color-success: #34c759;
   --color-warning: #ff9500;
   --color-danger: #ff3b30;
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-strong: rgba(0, 0, 0, 0.12);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  --color-border: rgba(60, 60, 67, 0.08);
+  --color-border-strong: rgba(60, 60, 67, 0.15);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.1);
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, sans-serif;
-  --transition-fast: 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
-  --transition-base: 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
-  --transition-slow: 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  --font-mono: 'SF Mono', 'Menlo', 'Monaco', monospace;
+  --spring-fast: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-base: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-slow: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 * {
@@ -42,7 +44,7 @@ body {
   font-family: var(--font-sans);
   background: var(--color-bg);
   color: var(--color-text);
-  line-height: 1.47;
+  line-height: 1.47059;
   overflow-x: hidden;
   min-height: 100vh;
   min-height: 100dvh;
@@ -84,7 +86,7 @@ a {
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -95,7 +97,7 @@ a {
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.94);
   }
   to {
     opacity: 1;
@@ -108,14 +110,86 @@ a {
   100% { background-position: 200% 0; }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes press {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
 .animate-fade {
-  animation: fadeIn var(--transition-base) ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .animate-slide-up {
-  animation: slideUp var(--transition-base) ease-out;
+  animation: slideUp 0.4s ease-out;
 }
 
 .animate-scale-in {
-  animation: scaleIn var(--transition-base) ease-out;
+  animation: scaleIn 0.35s ease-out;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--spring-fast), box-shadow var(--ease-out);
+}
+
+.theme-toggle:active {
+  transform: scale(0.88);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] {
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-blur: blur(20px);
+  --color-accent-neon: var(--color-accent);
+  --neon-glow: none;
+}
+
+[data-theme="dark"] {
+  --color-bg: #000000;
+  --color-surface: #1c1c1e;
+  --color-surface-secondary: #2c2c2e;
+  --color-text: #f5f5f7;
+  --color-text-secondary: #98989d;
+  --color-text-tertiary: #6e6e73;
+  --color-accent: #0a84ff;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --glass-bg: rgba(28, 28, 30, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(20px);
+  --color-accent-neon: #0a84ff;
+  --neon-glow: 0 0 10px rgba(10, 132, 255, 0.5), 0 0 20px rgba(10, 132, 255, 0.3);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+.neon-text {
+  color: var(--color-accent-neon);
+  text-shadow: var(--neon-glow);
 }

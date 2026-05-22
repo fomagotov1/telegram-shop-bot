@@ -6,15 +6,11 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "shop-db"
-database_id = ""
+database_id = "35d0b35a-ae48-425c-ac56-29e87d2d6470"
 
-[[r2_buckets]]
-binding = "BUCKET"
-bucket_name = "shop-uploads"
+# [[r2_buckets]]
+# binding = "BUCKET"
+# bucket_name = "shop-uploads"
 
 [vars]
-BOT_TOKEN = ""
-ADMIN_TELEGRAM_ID = ""
-SERVER_URL = ""
-MNEMONIC_SEED = ""
-WALLET_ADDRESS_TON = ""
+SERVER_URL = "https://telegram-shop-bot.pages.dev"

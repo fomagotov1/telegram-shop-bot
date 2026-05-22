@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Product } from '../types';
 import { useCart } from '../hooks/useCart';
@@ -8,6 +9,7 @@ import './Catalog.css';
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend-production-e853.up.railway.app/api';
 
 export default function Catalog() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -19,7 +21,9 @@ export default function Catalog() {
 
   async function fetchProducts() {
     try {
-      const res = await axios.get(`${API_URL}/products`);
+      const res = await axios.get(`${API_URL}/products`, {
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+      });
       setProducts(res.data);
     } catch (e) {
       console.error('Failed to fetch products:', e);
@@ -77,7 +81,7 @@ export default function Catalog() {
               className="animate-slide-up"
               style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}
             >
-              <ProductCard product={product} onAdd={() => addItem(product)} />
+              <ProductCard product={product} onAdd={() => addItem(product)} onClick={() => navigate(`/product/${product.id}`)} />
             </div>
           ))}
         </div>

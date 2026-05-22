@@ -7,70 +7,37 @@ import './Checkout.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend-production-e853.up.railway.app/api';
 
-type CryptoCurrency = 'TON' | 'USDT_TRC20' | 'USDT_ERC20' | 'ETH' | 'BTC';
+const RUB_TO_USD_RATE = 0.011;
 
-interface CurrencyOption {
-  currency: CryptoCurrency;
-  name: string;
-  network: string;
-  icon: string;
-  rate: number;
-}
-
-const CURRENCY_META: Record<CryptoCurrency, { name: string; network: string; icon: string }> = {
-  TON: {
-    name: 'TON',
-    network: 'TON Network',
-    icon: '💎',
-  },
-  USDT_TRC20: {
-    name: 'USDT',
-    network: 'TRC-20 (TRON)',
-    icon: '₮',
-  },
-  USDT_ERC20: {
-    name: 'USDT',
-    network: 'ERC-20 (Ethereum)',
-    icon: '₮',
-  },
-  ETH: {
-    name: 'ETH',
-    network: 'Ethereum',
-    icon: 'Ξ',
-  },
-  BTC: {
-    name: 'BTC',
-    network: 'Bitcoin',
-    icon: '',
-  },
+const CRYPTO_ICONS: Record<string, string> = {
+  TON: 'https://cryptologos.cc/logos/toncoin-ton-logo.png',
+  USDT_TRC20: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+  USDT_ERC20: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+  ETH: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+  BTC: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png',
 };
-
-const RUB_TO_USD = 0.011;
 
 export default function Checkout() {
   const navigate = useNavigate();
   const items = useCart((state) => state.items);
-  const clearCart = useCart((state) => state.clearCart);
   const [loading, setLoading] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState<CryptoCurrency>('TON');
-  const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyOption[]>([]);
+  const [selectedCurrency, setSelectedCurrency] = useState('TON');
+  const [availableCurrencies, setAvailableCurrencies] = useState<any[]>([]);
   const [cryptoAmount, setCryptoAmount] = useState('0');
 
-  const totalPriceUsd = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const totalPriceRub = Math.round(totalPriceUsd / RUB_TO_USD);
+  const totalPriceRub = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPriceUsd = +(totalPriceRub * RUB_TO_USD_RATE).toFixed(2);
+
+  useEffect(() => { fetchCurrencies(); }, []);
 
   useEffect(() => {
-    fetchCurrencies();
-  }, []);
-
-  useEffect(() => {
-    if (availableCurrencies.length > 0 && !availableCurrencies.find(c => c.currency === selectedCurrency)) {
+    if (availableCurrencies.length > 0 && !availableCurrencies.find((c: any) => c.currency === selectedCurrency)) {
       setSelectedCurrency(availableCurrencies[0].currency);
     }
   }, [availableCurrencies]);
 
   useEffect(() => {
-    const selected = availableCurrencies.find(c => c.currency === selectedCurrency);
+    const selected = availableCurrencies.find((c: any) => c.currency === selectedCurrency);
     if (selected && totalPriceUsd > 0) {
       const amount = totalPriceUsd / selected.rate;
       const decimals = selectedCurrency === 'BTC' ? 8 : 6;
@@ -81,18 +48,18 @@ export default function Checkout() {
   async function fetchCurrencies() {
     try {
       const res = await axios.get(`${API_URL}/orders/currencies`);
-      const currencies: CurrencyOption[] = res.data.currencies.map((c: CurrencyInfo) => ({
-        currency: c.currency as CryptoCurrency,
-        name: CURRENCY_META[c.currency as CryptoCurrency]?.name || c.currency,
-        network: CURRENCY_META[c.currency as CryptoCurrency]?.network || '',
-        icon: CURRENCY_META[c.currency as CryptoCurrency]?.icon || '💰',
-        rate: c.rate,
+      const currencies = res.data.currencies.map((c: CurrencyInfo) => ({
+        currency: c.currency,
+        name: c.currency === 'TON' ? 'TON' : c.currency === 'USDT_TRC20' ? 'USDT (TRC-20)' : c.currency === 'USDT_ERC20' ? 'USDT (ERC-20)' : c.currency === 'ETH' ? 'Ethereum' : 'Bitcoin',
+        network: c.currency === 'TON' ? 'TON Network' : c.currency === 'USDT_TRC20' ? 'TRON' : c.currency === 'USDT_ERC20' ? 'Ethereum' : c.currency === 'ETH' ? 'Ethereum' : 'Bitcoin',
+        icon: CRYPTO_ICONS[c.currency] || '',
+        rate: c.rate || 1,
       }));
       setAvailableCurrencies(currencies);
     } catch (e) {
       console.error('Failed to fetch currencies:', e);
       setAvailableCurrencies([
-        { currency: 'TON', name: 'TON', network: 'TON Network', icon: '💎', rate: 2.5 },
+        { currency: 'TON', name: 'TON', network: 'TON Network', icon: CRYPTO_ICONS.TON, rate: 2.5 },
       ]);
     }
   }
@@ -103,72 +70,79 @@ export default function Checkout() {
   }
 
   async function handlePay() {
+    const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    if (!telegramUserId) {
+      window.Telegram?.WebApp?.showAlert?.('Это приложение работает только внутри Telegram.');
+      return;
+    }
+
+    const confirmMsg = `Вы уверены, что хотите оплатить ${totalPriceRub.toLocaleString('ru-RU')} ₽ через ${selectedCurrency}?`;
+    const confirmed = await new Promise<boolean>((resolve) => {
+      if (window.Telegram?.WebApp?.showConfirm) {
+        window.Telegram.WebApp.showConfirm(confirmMsg, resolve);
+      } else {
+        resolve(window.confirm(confirmMsg));
+      }
+    });
+    if (!confirmed) return;
+
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/orders`, {
-        telegram_user_id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id,
+        telegram_user_id: telegramUserId,
         telegram_username: window.Telegram?.WebApp?.initDataUnsafe?.user?.username,
         items: items.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
+          id: item.id, name: item.name, price: item.price, quantity: item.quantity,
         })),
-        total_amount: totalPriceRub,
-        currency: 'RUB',
+        total_amount: totalPriceUsd,
+        currency: 'USD',
         crypto_currency: selectedCurrency,
       });
 
-      clearCart();
-
       navigate(`/payment/${res.data.order_id}`, {
         state: {
-          wallet_address: res.data.wallet_address,
-          memo: res.data.memo,
-          crypto_amount: res.data.crypto_amount,
-          currency: res.data.currency,
-          network: res.data.network,
-          usd_amount: res.data.usd_amount,
-          rub_amount: res.data.rub_amount,
-          rate: res.data.rate,
-          expires_at: res.data.expires_at,
+          wallet_address: res.data.address || res.data.wallet_address || '',
+          memo: res.data.memo || '',
+          crypto_amount: res.data.crypto_amount || '',
+          currency: res.data.currency || 'TON',
+          network: res.data.network || '',
+          usd_amount: res.data.usd_amount || 0,
+          rub_amount: totalPriceRub,
+          rate: res.data.rate || 1,
+          expires_at: res.data.expires_at || '',
         },
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error('Checkout error:', e);
-      alert('Ошибка при создании заказа. Попробуйте снова.');
+      const msg = e?.response?.data?.error || 'Ошибка при создании заказа. Попробуйте снова.';
+      window.Telegram?.WebApp?.showAlert?.(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  const selectedInfo = availableCurrencies.find(c => c.currency === selectedCurrency) || availableCurrencies[0];
+  const selectedInfo = availableCurrencies.find((c: any) => c.currency === selectedCurrency) || availableCurrencies[0];
 
   return (
     <div className="checkout">
       <header className="checkout-header">
         <button className="checkout-back" onClick={() => navigate(-1)}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
         </button>
         <h1 className="checkout-title">Оплата</h1>
         <div style={{ width: 20 }} />
       </header>
 
       <div className="checkout-items">
-        {items.map((item) => {
-          const itemPriceRub = Math.round(item.price / RUB_TO_USD);
-          return (
-            <div key={item.id} className="checkout-item">
-              <div className="checkout-item-info">
-                <h3>{item.name}</h3>
-                <p>× {item.quantity}</p>
-              </div>
-              <span className="checkout-item-total">{(itemPriceRub * item.quantity).toLocaleString('ru-RU')} ₽</span>
+        {items.map((item) => (
+          <div key={item.id} className="checkout-item">
+            <div className="checkout-item-info">
+              <h3>{item.name}</h3>
+              <p>× {item.quantity}</p>
             </div>
-          );
-        })}
+            <span className="checkout-item-total">{(item.price * item.quantity).toLocaleString('ru-RU')} ₽</span>
+          </div>
+        ))}
       </div>
 
       <div className="checkout-summary">
@@ -176,18 +150,12 @@ export default function Checkout() {
           <span>К оплате</span>
           <span className="checkout-total">{totalPriceRub.toLocaleString('ru-RU')} ₽</span>
         </div>
-        {selectedInfo && (
-          <div className="checkout-summary-row crypto-amount">
-            <span>≈ {cryptoAmount} {selectedInfo.name}</span>
-            <span className="crypto-rate">1 {selectedInfo.name} = ${selectedInfo.rate.toFixed(2)}</span>
-          </div>
-        )}
       </div>
 
       <div className="currency-selector">
-        <label className="currency-label">Выберите криптовалюту:</label>
+        <label className="currency-label">Выберите криптовалюту</label>
         <div className="currency-options">
-          {availableCurrencies.map((currency) => {
+          {availableCurrencies.map((currency: any) => {
             const isSelected = selectedCurrency === currency.currency;
             return (
               <button
@@ -195,49 +163,25 @@ export default function Checkout() {
                 className={`currency-option ${isSelected ? 'active' : ''}`}
                 onClick={() => setSelectedCurrency(currency.currency)}
               >
-                <span className="currency-icon">{currency.icon}</span>
+                {currency.icon ? (
+                  <img src={currency.icon} alt="" className="currency-img" />
+                ) : (
+                  <span className="currency-icon">{currency.icon}</span>
+                )}
                 <div className="currency-info">
                   <span className="currency-name">{currency.name}</span>
                   <span className="currency-network">{currency.network}</span>
                 </div>
-                {isSelected && (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="checkout-payment-info">
-        <div className="payment-method">
-          <div className="payment-icon">
-            <span className="payment-icon-text">{selectedInfo?.icon}</span>
-          </div>
-          <div className="payment-details">
-            <h3>{selectedInfo?.name}</h3>
-            <p>Оплата через {selectedInfo?.network}</p>
-          </div>
-        </div>
-        <p className="payment-note">
-          После нажатия «Оплатить» вы получите адрес кошелька для перевода.
-          <br />
-           Заказ действителен 30 минут.
-        </p>
-      </div>
+      <p className="payment-note">После нажатия «Оплатить» вы получите адрес кошелька для перевода.<br />Заказ действителен 15 минут.</p>
 
-      <button
-        className="checkout-pay-btn"
-        onClick={handlePay}
-        disabled={loading}
-      >
-        {loading ? (
-          <span className="spinner" />
-        ) : (
-          `Оплатить ${totalPriceRub.toLocaleString('ru-RU')} ₽`
-        )}
+      <button className="checkout-pay-btn" onClick={handlePay} disabled={loading}>
+        {loading ? <span className="spinner" /> : `Оплатить ${totalPriceRub.toLocaleString('ru-RU')} ₽`}
       </button>
     </div>
   );

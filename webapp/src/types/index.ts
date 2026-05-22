@@ -50,3 +50,12 @@ export interface PaymentResponse {
   rate: number;
   expires_at: string;
 }
+
+export interface ProductMedia {
+  id: string;
+  product_id: string;
+  url: string;
+  type: 'image' | 'video';
+  sort_order: number;
+  created_at: string;
+}

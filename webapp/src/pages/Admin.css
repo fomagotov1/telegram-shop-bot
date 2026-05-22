@@ -14,7 +14,8 @@
 .admin-title {
   font-size: 34px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .admin-add-btn {
@@ -26,12 +27,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--ease-out), transform var(--spring-fast);
 }
 
 .admin-add-btn:active {
   background: var(--color-accent-hover);
-  transform: scale(0.95);
+  transform: scale(0.93);
 }
 
 .admin-loading {
@@ -43,7 +44,7 @@
 .admin-skeleton {
   height: 72px;
   border-radius: var(--radius-md);
-  background: linear-gradient(90deg, var(--color-surface-secondary) 25%, #e8e8ed 50%, var(--color-surface-secondary) 75%);
+  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-secondary) 50%, var(--color-surface) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -85,7 +86,14 @@
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  animation: slideUp 0.3s ease-out both;
 }
+
+.admin-product-card:nth-child(1) { animation-delay: 0s; }
+.admin-product-card:nth-child(2) { animation-delay: 0.05s; }
+.admin-product-card:nth-child(3) { animation-delay: 0.1s; }
+.admin-product-card:nth-child(4) { animation-delay: 0.15s; }
+.admin-product-card:nth-child(5) { animation-delay: 0.2s; }
 
 .admin-product-image {
   width: 48px;
@@ -143,7 +151,7 @@
   justify-content: center;
   color: var(--color-text-tertiary);
   border-radius: var(--radius-sm);
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition: color var(--ease-out), background var(--ease-out);
 }
 
 .admin-product-actions button:active {
@@ -159,7 +167,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
   z-index: 200;
   display: flex;
   align-items: flex-end;
@@ -176,7 +184,7 @@
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: 20px 16px;
   padding-bottom: max(20px, env(safe-area-inset-bottom));
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 0.4s var(--spring-base);
 }
 
 .admin-form-header {
@@ -253,7 +261,7 @@
   border-radius: var(--radius-sm);
   font-size: 16px;
   color: var(--color-text);
-  transition: box-shadow var(--transition-fast);
+  transition: box-shadow var(--ease-out);
 }
 
 .form-group input:focus,
@@ -282,9 +290,72 @@
   font-weight: 600;
   border-radius: var(--radius-md);
   margin-top: 8px;
-  transition: background var(--transition-fast);
+  transition: background var(--ease-out), transform var(--spring-fast);
 }
 
 .form-submit-btn:active {
   background: var(--color-accent-hover);
+  transform: scale(0.98);
+}
+
+.locations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.location-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+}
+
+.loc-status {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.loc-status.available { color: var(--color-success); }
+.loc-status.reserved { color: var(--color-warning); }
+.loc-status.sold { color: var(--color-danger); }
+
+.add-location-form {
+  border-top: 1px solid var(--color-border);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+.add-location-form h4 {
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.add-location-form input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--color-surface-secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.add-location-form input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent);
 }

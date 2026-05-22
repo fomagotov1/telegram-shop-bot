@@ -19,7 +19,7 @@
   justify-content: center;
   color: var(--color-accent);
   border-radius: 50%;
-  transition: background var(--transition-fast);
+  transition: background var(--ease-out);
 }
 
 .checkout-back:active {
@@ -80,18 +80,6 @@
   justify-content: space-between;
 }
 
-.checkout-ton-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
-}
-
-.checkout-ton-row span:first-child {
-  font-size: 14px;
-  color: var(--color-text-tertiary);
-}
-
 .checkout-summary-row span:first-child {
   font-size: 17px;
   color: var(--color-text-secondary);
@@ -102,63 +90,6 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-text);
-}
-
-.checkout-summary-row.crypto-amount {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 0.5px solid var(--color-border);
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.checkout-summary-row.crypto-amount span:first-child {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-accent);
-}
-
-.crypto-rate {
-  font-size: 12px !important;
-  color: var(--color-text-tertiary) !important;
-}
-
-.checkout-payment-info {
-  margin-top: 24px;
-  padding: 16px;
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-}
-
-.payment-method {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.payment-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-success);
-}
-
-.payment-details h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.payment-details p {
-  font-size: 13px;
-  color: var(--color-text-tertiary);
-  margin-top: 1px;
 }
 
 .payment-note {
@@ -181,7 +112,7 @@
   font-size: 17px;
   font-weight: 600;
   border-radius: var(--radius-md);
-  transition: background var(--transition-fast), transform var(--transition-fast);
+  transition: background var(--ease-out), transform var(--spring-fast);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,11 +120,11 @@
 
 .checkout-pay-btn:active:not(:disabled) {
   background: var(--color-accent-hover);
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
 .checkout-pay-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -204,10 +135,6 @@
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .currency-selector {
@@ -236,29 +163,38 @@
   border: 2px solid transparent;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--spring-fast);
   text-align: left;
   width: 100%;
 }
 
 .currency-option:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
 .currency-option.active {
   border-color: var(--color-accent);
-  background: rgba(0, 113, 227, 0.05);
+  background: rgba(0, 113, 227, 0.06);
 }
 
 .currency-icon {
-  font-size: 24px;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-surface-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface-secondary);
-  border-radius: var(--radius-sm);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.currency-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .currency-info {
@@ -283,6 +219,6 @@
   color: var(--color-accent);
 }
 
-.payment-icon-text {
-  font-size: 24px;
+[data-theme="dark"] .currency-option.active {
+  background: rgba(10, 132, 255, 0.1);
 }

@@ -2,16 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import './Cart.css';
 
-const RUB_TO_USD = 0.011;
-
 export default function Cart() {
   const navigate = useNavigate();
   const items = useCart((state) => state.items);
   const removeItem = useCart((state) => state.removeItem);
   const updateQuantity = useCart((state) => state.updateQuantity);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPriceUsd = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const totalPriceRub = Math.round(totalPriceUsd / RUB_TO_USD);
+  const totalPriceRub = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   if (items.length === 0) {
     return (
@@ -41,7 +38,6 @@ export default function Cart() {
 
       <div className="cart-items">
         {items.map((item) => {
-          const itemPriceRub = Math.round(item.price / RUB_TO_USD);
           return (
             <div key={item.id} className="cart-item">
               <div className="cart-item-image">
@@ -53,7 +49,7 @@ export default function Cart() {
               </div>
               <div className="cart-item-info">
                 <h3 className="cart-item-name">{item.name}</h3>
-                <p className="cart-item-price">{itemPriceRub.toLocaleString('ru-RU')} ₽</p>
+                <p className="cart-item-price">{item.price.toLocaleString('ru-RU')} ₽</p>
               </div>
               <div className="cart-item-actions">
                 <div className="quantity-control">

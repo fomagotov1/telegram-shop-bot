@@ -8,7 +8,7 @@
 
 - **Название**: Telegram Shop Bot (Mini App)
 - **Описание**: Магазин в Telegram с оплатой криптовалютой (TON, USDT, ETH, BTC)
-- **Стек**: React + TS (Vite), Node.js + Express + Telegraf + SQLite
+- **Стек**: React + TS (Vite), Hono (Workers), Grammy (bot), Cloudflare D1, Cloudflare Pages
 - **Дизайн**: Apple-стиль (минимализм, blur-эффекты, анимации)
 
 ---
@@ -43,10 +43,13 @@
 
 ## 🌐 URL-адреса
 
-### Продакшн
-- **Frontend**: `https://telegram-shop-bot.netlify.app` ✅ Работает
-- **Backend**: `https://backend-production-e853.up.railway.app` ⚠️ Требует рестарта
-- **Health Check**: `https://backend-production-e853.up.railway.app/api/health`
+### Продакшн (текущий)
+- **Frontend (Cloudflare Pages)**: `https://telegram-shop-bot.pages.dev` ✅ Работает
+- **Backend (Cloudflare Workers)**: `https://shop-bot-backend.proud-lake-315a.workers.dev` ✅ Работает
+
+### Старое (больше не используется)
+- **Frontend (Netlify)**: `https://telegram-shop-bot.netlify.app` — заморожен
+- **Backend (Railway)**: `https://backend-production-e853.up.railway.app` — заморожен
 
 ### GitHub
 - **Repository**: `https://github.com/fomagotov1/telegram-shop-bot.git`
@@ -79,47 +82,60 @@ ETHERSCAN_API_KEY=
 
 ```
 telegram-shop-bot/
-── backend/                    # Node.js сервер
+├── backend-cf/                 # Cloudflare Workers backend (Hono + Grammy)
 │   ├── src/
 │   │   ├── index.ts           # Точка входа
-│   │   ├── bot.ts             # Telegram бот
-│   │   ├── db.ts              # SQLite база данных
-│   │   ├── routes/            # API маршруты
-│   │   ├── controllers/       # Контроллеры
-│   │   ── services/
-│   │       ├── crypto.ts      # Проверка платежей в блокчейне
-│   │       ├── hd-wallet.ts   # HD Wallet генерация адресов
-│   │       └── rates.ts       # Курсы криптовалют (CoinGecko)
+│   │   ├── routes/            # API маршруты (orders, support, etc.)
+│   │   └── ...
 │   ├── package.json
-│   └── railway.json
+│   ├── wrangler.toml
+│   └── README.md
 │
-├── webapp/                     # React фронтенд
+├── webapp/                     # React фронтенд (Vite)
 │   ├── src/
 │   │   ├── main.tsx
 │   │   ├── App.tsx
-│   │   ├── pages/             # Страницы
-│   │   ├── components/        # Компоненты
-│   │   ├── hooks/             # Хуки
-│   │   └── styles/            # Стили
+│   │   ├── pages/             # Catalog, Cart, Checkout, PaymentStatus, ProductDetail, Admin, Support
+│   │   ├── components/        # BottomNav, ProductCard, ErrorBoundary
+│   │   ├── hooks/             # useCart (Zustand)
+│   │   └── styles/            # global.css
 │   ├── package.json
-│   ├── netlify.toml
-│   └── .env.production
+│   ├── .env.production
+│   └── dist/                  # Сборка
 │
-└── PROJECT_MEMORY.md           # Этот файл
+├── backend/                    # Node.js Express backend (старый, заморожен)
+│
+├── wrangler.pages.toml
+├── netlify.toml
+├── CLOUDFLARE_SETUP.md
+└── tgshop_PROJECT_MEMORY.md    # Этот файл
 ```
 
 ---
 
 ## 🚀 Команды для развёртывания
 
-### Backend (Railway)
+### Backend (Cloudflare Workers)
+```powershell
+cd backend-cf
+npm run deploy
+```
+
+### Frontend (Cloudflare Pages)
+```powershell
+cd webapp
+npx vite build
+npx wrangler pages deploy dist --project-name=telegram-shop-bot --branch production --commit-dirty=true
+```
+
+### Старый бэкенд (Railway, заморожен)
 ```powershell
 $env:RAILWAY_TOKEN = "f97e55f5-52f9-4cbb-8dff-020ea2f86da7"
 cd backend
 railway up --ci --json --message "Deploy" --service e08e0fe0-1391-4e2f-aca7-a333f2b2e520
 ```
 
-### Frontend (Netlify)
+### Старый фронтенд (Netlify, заморожен)
 ```powershell
 $env:NETLIFY_AUTH_TOKEN = "nfp_iHNJvMp1Hfutwqi5fdCydKRWhgwurfte5f1e"
 cd webapp
@@ -160,6 +176,11 @@ npx netlify-cli deploy --prod --dir=dist --site=20dd643d-8e97-4498-a65a-fe387a44
 15. **MCP Server** - установлен `telegram-bot-mcp-server` для управления ботом
 16. **Тестовый товар** - добавлен "Красная Машинка" (1500 RUB)
 17. **Railway Issue** - авто-деплой не применяет код, требуется ручной рестарт сервиса
+18. **Миграция на Cloudflare** - бэкенд перенесён с Railway на Cloudflare Workers (Hono + Grammy), фронтенд с Netlify на Cloudflare Pages
+19. **Удалена i18n** — русский язык единственный, все строки хардкодные
+20. **Таймер оплаты** уменьшен с 30 до 15 минут
+21. **«Я оплатил»** — переработан: инлайн-проверка внутри приложения (спиннер + результат), без Telegram showAlert
+22. **Apple-style CSS** — полный редизайн: пружинные анимации, true black тёмная тема, frosted glass, единые радиусы и тени
 
 ---
 
@@ -192,4 +213,4 @@ npx netlify-cli deploy --prod --dir=dist --site=20dd643d-8e97-4498-a65a-fe387a44
 
 ---
 
-*Последнее обновление: 2026-05-20*
+*Последнее обновление: 2026-05-21*

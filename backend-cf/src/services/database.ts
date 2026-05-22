@@ -11,6 +11,15 @@ export interface Product {
   updated_at: string;
 }
 
+export interface ProductMedia {
+  id: string;
+  product_id: string;
+  url: string;
+  type: string;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface Order {
   id: string;
   telegram_user_id: number;
@@ -39,6 +48,33 @@ export interface Payment {
   updated_at: string;
 }
 
+export interface SupportTicket {
+  id: string;
+  order_id: string | null;
+  telegram_user_id: number;
+  telegram_username: string | null;
+  message: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductLocation {
+  id: string;
+  product_id: string;
+  latitude: number;
+  longitude: number;
+  status: string;
+  created_at: string;
+}
+
+export interface OrderLocation {
+  id: string;
+  order_id: string;
+  location_id: string;
+  created_at: string;
+}
+
 export class Database {
   private db: D1Database;
 
@@ -47,12 +83,22 @@ export class Database {
   }
 
   async getAllProducts(): Promise<Product[]> {
-    const result = await this.db.prepare('SELECT * FROM products ORDER BY created_at DESC').all();
+    const result = await this.db.prepare(`
+      SELECT p.*, 
+             (SELECT COUNT(*) FROM product_locations pl WHERE pl.product_id = p.id AND pl.status = 'available') as stock 
+      FROM products p 
+      ORDER BY p.created_at DESC
+    `).all();
     return (result.results || []) as unknown as Product[];
   }
 
   async getProductById(id: string): Promise<Product | null> {
-    const result = await this.db.prepare('SELECT * FROM products WHERE id = ?').bind(id).first();
+    const result = await this.db.prepare(`
+      SELECT p.*, 
+             (SELECT COUNT(*) FROM product_locations pl WHERE pl.product_id = p.id AND pl.status = 'available') as stock 
+      FROM products p 
+      WHERE p.id = ?
+    `).bind(id).first();
     return result as Product | null;
   }
 
@@ -79,7 +125,29 @@ export class Database {
   }
 
   async deleteProduct(id: string): Promise<boolean> {
+    await this.db.prepare('DELETE FROM product_media WHERE product_id = ?').bind(id).run();
+    await this.db.prepare('DELETE FROM product_locations WHERE product_id = ?').bind(id).run();
     const result = await this.db.prepare('DELETE FROM products WHERE id = ?').bind(id).run();
+    return result.success;
+  }
+
+  async getProductMedia(productId: string): Promise<ProductMedia[]> {
+    const result = await this.db.prepare(
+      'SELECT * FROM product_media WHERE product_id = ? ORDER BY sort_order ASC'
+    ).bind(productId).all();
+    return (result.results || []) as unknown as ProductMedia[];
+  }
+
+  async addProductMedia(media: Omit<ProductMedia, 'id' | 'created_at'>): Promise<ProductMedia> {
+    const id = crypto.randomUUID();
+    await this.db.prepare(
+      'INSERT INTO product_media (id, product_id, url, type, sort_order) VALUES (?, ?, ?, ?, ?)'
+    ).bind(id, media.product_id, media.url, media.type, media.sort_order).run();
+    return { ...media, id, created_at: new Date().toISOString() };
+  }
+
+  async deleteProductMedia(id: string): Promise<boolean> {
+    const result = await this.db.prepare('DELETE FROM product_media WHERE id = ?').bind(id).run();
     return result.success;
   }
 
@@ -122,5 +190,113 @@ export class Database {
     ).bind(status, txHash || null, id).run();
     const result = await this.db.prepare('SELECT * FROM payments WHERE id = ?').bind(id).first();
     return result as Payment | null;
+  }
+
+  async cancelOrder(id: string): Promise<boolean> {
+    const result = await this.db.prepare(
+      "UPDATE orders SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    ).bind(id).run();
+    await this.releaseOrderLocations(id);
+    return result.success;
+  }
+
+  async createSupportTicket(ticket: Omit<SupportTicket, 'id' | 'created_at' | 'updated_at'>): Promise<SupportTicket> {
+    const id = crypto.randomUUID();
+    await this.db.prepare(
+      'INSERT INTO support_tickets (id, order_id, telegram_user_id, telegram_username, message, status) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(id, ticket.order_id, ticket.telegram_user_id, ticket.telegram_username, ticket.message, ticket.status).run();
+    return { ...ticket, id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as SupportTicket;
+  }
+
+  async getTicketsByUser(telegramUserId: number): Promise<SupportTicket[]> {
+    const result = await this.db.prepare(
+      'SELECT * FROM support_tickets WHERE telegram_user_id = ? ORDER BY created_at DESC'
+    ).bind(telegramUserId).all();
+    return (result.results || []) as unknown as SupportTicket[];
+  }
+
+  async getOrdersByUser(telegramUserId: number): Promise<Order[]> {
+    const result = await this.db.prepare(
+      "SELECT * FROM orders WHERE telegram_user_id = ? ORDER BY created_at DESC"
+    ).bind(telegramUserId).all();
+    return (result.results || []) as unknown as Order[];
+  }
+
+  // Location Methods
+  
+  async getProductLocations(productId: string): Promise<ProductLocation[]> {
+    const result = await this.db.prepare(
+      'SELECT * FROM product_locations WHERE product_id = ? ORDER BY created_at DESC'
+    ).bind(productId).all();
+    return (result.results || []) as unknown as ProductLocation[];
+  }
+
+  async addProductLocation(location: Omit<ProductLocation, 'id' | 'created_at' | 'status'>): Promise<ProductLocation> {
+    const id = crypto.randomUUID();
+    await this.db.prepare(
+      'INSERT INTO product_locations (id, product_id, latitude, longitude, status) VALUES (?, ?, ?, ?, ?)'
+    ).bind(id, location.product_id, location.latitude, location.longitude, 'available').run();
+    return { ...location, id, status: 'available', created_at: new Date().toISOString() };
+  }
+
+  async deleteProductLocation(id: string): Promise<boolean> {
+    const result = await this.db.prepare('DELETE FROM product_locations WHERE id = ?').bind(id).run();
+    return result.success;
+  }
+
+  async reserveLocationsForOrder(orderId: string, productId: string, count: number): Promise<boolean> {
+    const available = await this.db.prepare(
+      'SELECT id FROM product_locations WHERE product_id = ? AND status = ? LIMIT ?'
+    ).bind(productId, 'available', count).all();
+    
+    if (!available.results || available.results.length < count) {
+      return false; // Not enough stock
+    }
+    
+    const locationIds = available.results.map((r: any) => r.id);
+    const statements = [];
+    for (const locId of locationIds) {
+      statements.push(
+        this.db.prepare('UPDATE product_locations SET status = ? WHERE id = ?').bind('reserved', locId)
+      );
+      const orderLocId = crypto.randomUUID();
+      statements.push(
+        this.db.prepare('INSERT INTO order_locations (id, order_id, location_id) VALUES (?, ?, ?)')
+        .bind(orderLocId, orderId, locId)
+      );
+    }
+    
+    await this.db.batch(statements);
+    return true;
+  }
+
+  async markOrderLocationsAsSold(orderId: string): Promise<void> {
+    await this.db.prepare(`
+      UPDATE product_locations 
+      SET status = 'sold' 
+      WHERE id IN (SELECT location_id FROM order_locations WHERE order_id = ?)
+    `).bind(orderId).run();
+  }
+
+  async releaseOrderLocations(orderId: string): Promise<void> {
+    const statements = [
+      this.db.prepare(`
+        UPDATE product_locations 
+        SET status = 'available' 
+        WHERE id IN (SELECT location_id FROM order_locations WHERE order_id = ?)
+      `).bind(orderId),
+      this.db.prepare('DELETE FROM order_locations WHERE order_id = ?').bind(orderId)
+    ];
+    await this.db.batch(statements);
+  }
+
+  async getOrderLocations(orderId: string): Promise<ProductLocation[]> {
+    const result = await this.db.prepare(`
+      SELECT pl.* 
+      FROM product_locations pl
+      JOIN order_locations ol ON pl.id = ol.location_id
+      WHERE ol.order_id = ?
+    `).bind(orderId).all();
+    return (result.results || []) as unknown as ProductLocation[];
   }
 }
